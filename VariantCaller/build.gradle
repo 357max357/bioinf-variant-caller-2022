@@ -1,0 +1,118 @@
+plugins {
+  id 'idea'
+  id 'eclipse'
+  id 'java'
+  id 'application'
+  id 'checkstyle'
+  id "com.github.spotbugs" version "5.0.6"
+  id "com.github.johnrengelman.shadow" version "5.2.0"
+}
+
+mainClassName = "com.epam.bioinf.variantcaller.Main"
+
+group 'com.epam.bioinf.variantcaller'
+
+sourceCompatibility = 1.11
+targetCompatibility = 1.11
+
+sourceSets {
+  main {
+    java.srcDirs = ['src/main/java']
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  //jopt - library for command line arguments analysis
+  implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '6.0-alpha-3'
+
+  //unit tests libs
+  testImplementation('junit:junit:4.12')
+  testImplementation('org.junit.jupiter:junit-jupiter:5.6.0')
+
+  //spotbugs libs
+  //implementation group: 'com.github.spotbugs', name: 'spotbugs', version: '4.0.1', ext: 'pom'
+
+  // https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations
+  implementation 'com.github.spotbugs:spotbugs-annotations:4.5.3'
+
+
+  //https://mvnrepository.com/artifact/com.github.samtools/htsjdk
+  implementation group: 'com.github.samtools', name: 'htsjdk', version: '2.21.3'
+  implementation 'org.jetbrains:annotations:15.0'
+
+  // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
+  implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.0'
+
+  implementation 'org.mockito:mockito-core:4.3.1'
+
+
+  // https://mvnrepository.com/artifact/org.assertj/assertj-core
+  testImplementation 'org.assertj:assertj-core:3.6.1'
+}
+
+sourceSets {
+  integrationTest {
+    java {
+      compileClasspath += main.output + test.output
+      runtimeClasspath += main.output + test.output
+    }
+  }
+}
+
+configurations {
+  integrationTestImplementation.extendsFrom testImplementation
+  integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+  integrationTestCompileOnly.extendsFrom testCompileOnly
+}
+
+task integrationTest(type: Test, dependsOn: shadowJar) {
+  description = 'Runs integration tests.'
+  group = 'verification'
+  testClassesDirs = sourceSets.integrationTest.output.classesDirs
+  classpath = sourceSets.integrationTest.runtimeClasspath
+
+  shouldRunAfter test
+}
+
+spotbugsMain.enabled = false
+spotbugsTest.enabled = false
+spotbugsIntegrationTest.enabled = false
+
+shadowJar {
+  baseName = 'VariantCaller'
+  classifier = ''
+  archiveVersion = ''
+}
+
+jar {
+  manifest.attributes("Main-Class": mainClassName)
+}
+
+test {
+  useJUnitPlatform()
+}
+
+def configDir = "${project.rootDir}/config"
+checkstyle {
+  toolVersion '7.8.1'
+  configFile file("$configDir/checkstyle/checkstyle.xml")
+  configProperties.checkstyleSuppressionsPath = file("$configDir/checkstyle/suppressions.xml").absolutePath
+}
+
+//tasks.withType(com.github.spotbugs.SpotBugsTask) {
+//  reports {
+//    xml.enabled = false
+//    html.enabled = true
+//  }
+//}
+
+checkstyleMain {
+  source = 'src/main/java'
+}
+checkstyleTest {
+  source = 'src/test/java'
+}
